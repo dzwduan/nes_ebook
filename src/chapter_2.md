@@ -1,60 +1,63 @@
-# Understanding the NES Platform
-## Achitecture
+# 了解NES平台
+## 架构
 
-The simplified architecture of hardware-software interaction looks like this:
+简化版的软硬件融合架构如下图所示：
 
 <div style="text-align:center"><img src="./images/ch2/image_1_computer_arch.png" width="30%"/></div>
 
-From top to bottom:
-* Applications are running business logic and interact with hardware through an Operating System.
-* The Operating System communicates with the hardware using machine language.
-* On a hardware level, each device can be seen as an array of memory elements, processing units, or both. From this perspective, NES joypad is nothing more than an array of eight 1-bit items, each representing a pressed/released state of a button
-* Layers below ALU and Memory elements are less of an interest to us. On a hardware level, it all comes down to logic gates and their arrangements.
+自顶向下来看:
+* 应用运行业务逻辑并且通过操作系统与硬件交流。
+* 操作系统通过机器语言沟通硬件。
+* 在硬件层面，每个设备都可以被看作是一组存储元件、处理单元或两者兼而有之。从这个角度来看，NES守斌也不过是由8个1bit项组成的数组，每个bit代表一个按钮的按下或者释放。
+* ALU和Memmory elements下面的层面不需要关心。在硬件层面上可以都归结为逻辑门的组合排列。
 
-> If you want to get intimate knowledge of how computers are composed, starting from the basic principles of boolean logic, I highly recommend the book:<br/> <a href="https://www.goodreads.com/book/show/910789.The_Elements_of_Computing_Systems">"The Elements of Computing Systems. Building a Modern Computer from First Principles"</a> by Noam Nisan, Shimon Schocken.
+> 想要更多的了解软硬件的基础知识，推荐阅读《计算机系统要素》，非常具有实操性。
 
-Luckily for us, NES doesn't have an Operating System. That means that the Application layer (Gamezzz) communicates with hardware directly using machine language.
+幸运的是，NES没有操作系统。这也意味着应用层(游戏内容)直接使用机器语言和硬件通信。
 
-The simplified version of this layered architecture looks like this:
+这种分层架构的简化版本如下图所示：
 
 <div style="text-align:center"><img src="./images/ch2/image_2_nes_emul_arch.png" width="30%"/></div>
 
-As you can see, machine language is the interface between our emulator and our NES games.
+正如你所看到的，机器语言是应用层游戏和我们模拟器之间的接口。
 
-In the coming emulator, we would need to implement NES Computer Architecture, Arithmetic Logic Unit, and Memory. By using high-level language, we don't need to worry about simulating boolean arithmetic and sequential logic. Instead, we should rely on existing Rust features and language constructs.
+在即将实现的模拟器中，我们需要实现上图中标绿的模块，`Computer Architecture`， `ALU` , `Memory elements`。通过使用高级语言，我们不需要考虑布尔算术和时序逻辑的模拟，反之，我们应该依赖现有的Rust特性和语言结构。
 
-## NES Platform Main Components
+ 
+
+## NES平台主要组成部分
 
 <div style="text-align:center"><img src="./images/ch2/image_3_nes_components.png" width="50%"/></div>
 
-The significantly simplified schema of main NES hardware components:
+NES硬件组成的简化架构:
 
- * Central Processing Unit (**CPU**) - the NES's 2A03 is a modified version of the [6502 chip](https://en.wikipedia.org/wiki/MOS_Technology_6502). As with any CPU, the goal of this module is to execute the main program instructions.
+ * 中央处理单元(**CPU**) - NES的2A03芯片是6502芯片的修改版，用于执行主程序的命令。
 
-* Picture Processing Unit (**PPU**) - was based on the 2C02 chip made by Ricoh, the same company that made CPU. This module's primary goal is to draw the current state of a game on a TV Screen.
+* 图像处理单元 (**PPU**) - 基于2C02芯片，用于在电视屏幕上绘制游戏的当前状态。
 
-* Both CPU and PPU have access to their 2 KiB (2048 bytes) banks of Random Access Memory (**RAM**)
+* **CPU**和**PPU**都可以访问他们的2KiB(2048 bytes)的随机存储存储器(**RAM**)。
 
-* Audio Processing Unit (**APU**) - the module is a part of 2A03 chip and is responsible for generating specific five-channel based sounds, that made NES chiptunes so recognizable.
+* 音频处理单元 (**APU**) - 该模块是2A03芯片的一部分，用于生成特定的基于五通道的声音，这使得NES芯片产生的声音具有辨识度。
 
-* Cartridges - were an essential part of the platform because the console didn't have an operating system. Each cartridge carried at least two large ROM chips - the Character ROM (CHR ROM) and the Program ROM (PRG ROM). The former stored a game's video graphics data, the latter stored CPU instructions - the game's code.
-(in reality, when a cartridge is inserted into the slot CHR Rom is connected directly to PPU, while PRG Rom is connected directly to CPU)
-The later version of cartridges carried additional hardware (ROM and RAM) accessible through so-called mappers. That explains why later games had provided significantly better gameplay and visuals despite running on the same console hardware.
+* 卡带 - 是平台的重要组成部分，因为控制台没有操作系统。每个卡带至少有两个大的**ROM**芯片，字符ROM(CHR ROM)和程序ROM(PRG ROM)。前者存储游戏的视频图形数据，后者存储CPU指令--游戏代码。（当卡带插入插槽时，CHR ROM直连到 PPU，而 PRG ROM直连到 CPU)
+
+  更高版本的卡带有额外的硬件(ROM和RAM)，可以通过映射器访问。这就解释了为什么运行在相同的控制台硬件上，后来的游戏却能够提供明显更好的游戏玩法和视觉效果。																		
+  
 
 <div style="text-align:center"><img src="./images/ch2/image_4_cartridge.png" width="50%"/></div>
 
-* Gamepads - have a distinct goal to read inputs from a gamer and make it available for game logic. As we will see later, the fact that the gamepad for the 8-bit platform has only eight buttons is not a coincidence.
+* 游戏手柄 - 有一个明确的目标，即读取游戏玩家的输入并使其可用于游戏逻辑。我们稍后会看到，8-bit平台的游戏手柄只有8个按钮这一事实并非巧合。
 
-What's interesting is that CPU, PPU, and APU are independent of each other. This fact makes NES a distributed system in which separate components have to coordinate to generate one seamless gaming experience.
+CPU，PPU和APU彼此独立，这使得NES称为了一个分布式系统，其中单独的组件必须协调才能产生无缝的游戏体验。
 
-We can use the schema of the main NES components as an implementation plan for our emulator.
+我们可以使用主要的NES组件来实现我们的模拟器。
 
 <div style="text-align:center"><img src="./images/ch2/image_6_impl_plan.png" width="80%"/></div>
 
-We have to build a simulation of all of these modules. The goal is to have something playable as soon as possible. Using an iterative approach, we will incrementally add features to achieve this goal.
+我们必须实现所有相关模块的模拟。目标是尽快有一些可以完的东西。使用迭代开发方法，我们将逐步添加功能来实现目标。
 
-Roughly estimating the effort required for each component, PPU will be the hardest, and the BUS the easiest.
+粗略地估计一下每个组件的工作量，PPU是最难的，BUS是最简单的。
 
-Writing a perfect emulator is a never-ending quest. But this quest has a start, and we will start by emulating the CPU.
+写一个完美的模拟器是是没有尽头的，我们将从模拟CPU开始。
 
 <div style="text-align:center"><img src="./images/ch2/image_5_motherboard.png" width="80%"/></div>
