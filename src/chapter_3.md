@@ -1,30 +1,29 @@
- # Emulating CPU
+ # 模拟CPU
 
-
-The goal of this chapter is to get our first NES game up and running.
-We are going to play the Snake game. The source code with comments can be found in [this gist](https://gist.github.com/wkjagt/9043907).
+本章的目标是让我们的第一个NES游戏启动并运行。
+我们将会玩贪吃蛇游戏，[代码地址](https://gist.github.com/wkjagt/9043907)
 
  <div style="text-align:center"><img src="./images/ch3/snk_logo.png" width="40%"/></div>
  <div style="text-align:center"><img src="./images/ch3/snk_game.gif" width="40%"/></div>
 
-CPU is the heart of any computer system. It's the CPUs job to run program instructions and orchestrate all of the available hardware modules to provide the full experience. Despite PPU and APU running their independent circuits, they still have to march under CPUs beat and execute commands issued by the CPU.
+CPU是任何计算机系统的心脏。CPU的工作是运行程序指令并且协调所有可用的硬件模块来提供完整的体验。尽管PPU和APU运行他们各自独立的电路，但是仍然需要按CPU节拍前进，并且执行CPU发出的命令。
 
-Before jumping into implementation, we need to briefly discuss which resources are available to the CPU to do its work.
+在跳转到实现之前，我们需要简单地讨论一下CPU需要哪些资源来完成工作。
 
-The only two resources that the CPU has access to are the Memory Map and CPU Registers.
+CPU唯二可用访问的资源是内存映射和CPU寄存器。
 
-From a programming standpoint, the memory map is just a continuous array of 1-byte cells. NES CPU uses 16-bit for memory addressing, which means that it can address 65536 different memory cells.
+从编程的角度来看，内存映射只是一个1-bit单元的连续数组。NES CPU使用16位进行内存寻址，即可以寻址65536个不同的内存单元。
 
-As we've seen before, the NES platform had only 2 KiB of RAM connected to the CPU.
+如我们之前所见，NES平台只有2KiB的RAM连接到CPU。
 
  <div style="text-align:center"><img src="./images/ch3/cpu_registers_memory.png" width="80%"/></div>
 
 
-That RAM is accessible via **[0x0000 … 0x2000]** address space.
+该RAM可以通过 **[0x0000 … 0x2000]**的地址空间访问。
 
-Access to **[0x2000 … 0x4020]** is redirected to other available NES hardware modules: PPU, APU, GamePads, etc. (more on this later)
+访问 **[0x2000 … 0x4020]** 被重定向到其他可用的NES硬件模块: PPU, APU, GamePads等。
 
-Access to **[0x4020 .. 0x6000]** is a special space that different generations of cartridges used differently. It might be mapped to RAM, ROM, or nothing at all. The space is controlled by so-called mappers - special circuitry on a cartridge. We will ignore this space.
+访问 **[0x4020 .. 0x6000]** 是特殊的，这里是不同的卡带所使用的特殊空间。该空间由所谓的映射器控制-卡带上的特殊电路。
 
 Access to **[0x6000 .. 0x8000]** is reserved to a RAM space on a cartridge if a cartridge has one. It was used in games like Zelda for storing and retrieving the game state. We will ignore this space as well.
 
