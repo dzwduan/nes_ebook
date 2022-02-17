@@ -21,6 +21,8 @@ https://skilldrick.github.io/easy6502/
 
 https://www.masswerk.at/6502/6502_instruction_set.html
 
+http://www.c64os.com/post/6502instructions
+
 <div style="text-align:center"><img src="./images/ch3.1/image_2_lda_spec.png" width="50%"/></div>
 
 该命令将0xc0加载到累加寄存器A中，还需要更新状态寄存器P的一些位（bit 1 - Zero Flag和bit 7 - Negative Flag）
