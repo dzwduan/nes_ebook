@@ -1,12 +1,12 @@
-# Memory addressing modes
+# 内存映射模型
 
-In our initial implementation, the CPU receives instructions as a separate input stream, this is not how things work in an actual NES.
+在我们原始的实现中，CPU接受指令序列作为单独的输入流，但这不是NES的实际工作方式。
 
-NES implements typical von Neumann architecture: both data and the instructions are stored in memory. The executed code is data from the CPU perspective, and any data can potentially be interpreted as executable code. There is no way CPU can tell the difference. The only mechanism the CPU has is a **program_counter** register that keeps track of a position in the instructions stream.
+NES实现了典型的冯诺依曼架构：数据和指令都存储在内存中。从CPU的角度来看，执行的代码也是数据，任何数据都能被解释为可执行的代码，CPU无法区分二者，CPU只能使用PC寄存器来跟踪当前在指令流中的位置。
 
  <div style="text-align:center"><img src="./images/ch3.2/image_1_von_neuman.png" width="60%"/></div>
 
-Let's sketch this out in our CPU code:
+修改代码如下：
 
 ```rust
 
@@ -54,34 +54,33 @@ impl CPU {
 ```
 
 
-We have just created an array for the whole 64 KiB of address space. As discussed in a future chapter<LINK TO A CHAPTER>, CPU has only 2 KiB of RAM, and everything else is reserved for memory mapping.
+我们为64KiB的地址空间创建了一个数组，但是CPU只有2KiB的RAM，其他部分都作为保留部分。
 
-We load program code into memory, starting at 0x8000 address. We've discusses that [0x8000 .. 0xFFFF] is reserved for Program ROM, and we can assume that the instructions stream should start somewhere in this space (not necessarily at 0x8000).
+我们从0x8000开始将程序加载到内存中，[0x8000...0xffff]之前提到是为程序ROM保留的区域，假设指令流从这块空间的某次开始，不一定是0x8000
 
-NES platform has a special mechanism to mark where the CPU should start the execution. Upon inserting a new cartridge, the CPU receives a special signal called "Reset interrupt" that instructs CPU to:
-* reset the state (registers and flags)
-* set **program_counter** to the 16-bit address that is stored at 0xFFFC
+NES平台有一个特殊的机制来标记CPU从哪里开始执行。插入卡带后，CPU会收到一个称为重置中断的特殊信号，该信号导致CPU做出以下行为：
+* 重置状态（寄存器和flags)
+* 将PC设置为存储在0xFFFC的16位地址
 
-Before implementing that, I should briefly mention that NES CPU can address 65536 memory cells. It takes 2 bytes to store an address. NES CPU uses Little-Endian addressing rather than Big-Endian.
-That means that the 8 least significant bits of an address will be stored before the 8 most significant bits.
+在实现之前，回顾之前的内容提到NES CPU可以寻址65536个内存单元。存储一个地址需要两个字节，NES采用小端寻址。
 
-To illustrate the difference:
+为了说明差异：
 
 
 | |  |
 |-|-:|
-| Real Address | **0x8000** |
-| Address packed in big-endian | **80 00** |
-|Address packed in little-endian | **00 80** |
+| 真实地址 | **0x8000** |
+| 大端模式 | **80 00** |
+|小端模式 | **00 80** |
 
 
-For example, the instruction to read data from memory cell 0x8000 into A register would look like:
+例如，将数据从内存单元0x8000读取到A寄存器的指令如下所示：
 
 ```
 LDA $8000      <=>    ad 00 80
 ```
 
-We can implement this behaviour using some of Rust's bit arithmetic:
+我们可以使用rust的位运算来实现该行为：
 
 
 ```rust
@@ -100,11 +99,11 @@ We can implement this behaviour using some of Rust's bit arithmetic:
 
 ```
 
-Or by using Rust's [endian support for primitive types](https://doc.rust-lang.org/std/primitive.u16.html#method.from_le_bytes).
+或者使用rust实现好的 [endian support for primitive types](https://doc.rust-lang.org/std/primitive.u16.html#method.from_le_bytes).
 
-Now we can implement **reset** functionality properly. We will have to adjust the `load` and `load_and_run` functions:
-* **load** method should load a program into PRG ROM space and save the reference to the code into 0xFFFC memory cell
-* **reset** method should restore the state of all registers, and initialize program_counter by the 2-byte value stored at 0xFFFC
+现在我们已经能够实现reset功能了，需要调整`load` 和 `load_and_run`函数：
+* **load** 方法将程序加载到程序ROM空间并且在0xFFFC处保存对代码的引用。
+* **reset** 方法恢复所有寄存器的状态，通过存储在0xFFFC处的两个字节初始化PC
 
 
 ```rust
