@@ -2,33 +2,37 @@
 
  <div style="text-align:center"><img src="./images/ch3/chapter_logo.png" width="20%"/></div>
 
-Let's try to interpret our first program. The program looks like this:
+首先尝试解释第一个程序，该程序如下所示：
 
 
 ```
 a9 c0 aa e8 00
 ```
 
-This is somewhat cryptic as it isn't designed to be read by humans. We can decipher what's going on more easily if we represent the program in [assembly code](https://en.wikipedia.org/wiki/Assembly_language):
+该二进制代码对人类阅读不友好。如果我们用汇编表示程序，可以更清除地看到发生了什么：
 
 <div style="text-align:center"><img src="./images/ch3.1/image_1_assembler.png" width="40%"/></div>
 
-Now it's more readable: it consists of 4 instructions, and the first instruction has a parameter.
+现在更具可读性：由4条指令组成，第一条指令有一个参数
 
-Let's interpret what's going on by referencing the opcodes from the [6502 Instruction Reference](http://www.obelisk.me.uk/6502/reference.html)
+6502指令集参考 ：
+
+https://skilldrick.github.io/easy6502/
+
+https://www.masswerk.at/6502/6502_instruction_set.html
 
 <div style="text-align:center"><img src="./images/ch3.1/image_2_lda_spec.png" width="50%"/></div>
 
-It looks like that the command loads a hexadecimal value 0xC0 into the accumulator CPU register. It also has to update some bits in Processor Status register P (namely, bit 1 - Zero Flag and bit 7 - Negative Flag).
+该命令将0xc0加载到累加寄存器A中，还需要更新状态寄存器P的一些位（bit 1 - Zero Flag和bit 7 - Negative Flag）
 
 
-> **LDA** spec shows that the opcode **0xA9** has one parameter. The instruction size is 2 bytes: one byte is for operation code itself (standard for all NES CPU opcodes), and the other is for a parameter.
+> LDA规范显示0xA9有一个参数，指令大小为2字节，一个用于操作码本身，一个用于参数。
 >
-> NES Opcodes can have no explicit parameters or one explicit parameter. For some operations, the explicit parameter can take 2 bytes. And in that case, the machine instruction would occupy 3 bytes.
+> NES操作码有0个或1个显式参数，对于某些操作，显式参数可以占用两个字节，此时机器指令将占用3个字节。
 >
-> It is worth mentioning that some operations use CPU registers as implicit parameters.
+> 一些操作使用PC作为隐式参数
 
-Let's sketch out how our CPU might look like from a high-level perspective:
+让我们俯瞰一下CPU的结构：
 
 ```rust
 pub struct CPU {
@@ -52,15 +56,15 @@ impl CPU {
 }
 ```
 
-Note that we introduced a program counter register that will help us track our current position in the program. Also, note that the interpret method takes a mutable reference to self as we know that we will need to modify **register_a** during the execution.
+我们引入了程序计数器PC，用于追踪程序的当前位置。interpret采用可变引用，因为需要在执行期间修改`register_a`
 
-The CPU works in a constant cycle:
-* Fetch next execution instruction from the instruction memory
-* Decode the instruction
-* Execute the Instruction
-* Repeat the cycle
+CPU工作中以恒定的周期工作:
+* 从指令存储器中取出下一条指令
+* 译码
+* 执行指令
+* 重复循环
 
-Lets try to codify exactly that:
+我们尝试实现todo
 
 ```rust 
 pub fn interpret(&mut self, program: Vec<u8>) {
@@ -77,7 +81,7 @@ pub fn interpret(&mut self, program: Vec<u8>) {
 }
 ```
 
-So far so good. Endless loop? Nah, it's gonna be alright. Now let's implement the **LDA (0xA9)** opcode:
+到目前位置一切正常，循环的退出后面实现，下面实现LDA(0xA9)
 
 ```rust
         match opscode {
@@ -103,11 +107,11 @@ So far so good. Endless loop? Nah, it's gonna be alright. Now let's implement th
         }
 ```
 
-We are not doing anything crazy here, just following the spec and using rust constructs to do binary arithmetic.
+我们并没有做一些神奇的事情，仅仅是按照手册使用rust构建二进制算术功能。
 
-> It's essential to set or unset CPU flag status depending on the results.
+> 根据结果对CPU的flag置位或者取消置位比较重要。
 
-Because of the endless loop, we won't be able to test this functionality yet. Before moving on, let's quickly implement **BRK (0x00)** opcode:
+由于无限循环，我们还不能测试功能，这里需要实现BRK(0x00)：
 
 ```rust
         match opcode {
@@ -119,7 +123,7 @@ Because of the endless loop, we won't be able to test this functionality yet. Be
         }
 ```
 
-Now let's write some tests:
+现在写一些测试：
 
 
 ```rust
@@ -145,15 +149,15 @@ mod test {
 }
 ```
 
-> Do you think that's enough? What else should we check?
+> 这些已经足够了吗？ 还需要检查哪些内容？
 
-Alright. Let's try to implement another opcode, shall we?
+现在我们来实现另一个操作码TAX
 
 <div style="text-align:center"><img src="./images/ch3.1/image_3_tax_spec.png" width="50%"/></div>
 
-This one is also straightforward: copy a value from A to X, and update status register.
+功能比较简单：将值从A寄存器复制到X寄存器，并更新状态寄存器。
 
-We need to introduce **register_x** in our CPU struct, then we can implement the **TAX (0xAA)** opcode:
+我们需要在CPU中引入`register_x`，然后就能实现TAX(0xAA)：
 
 ```rust
 pub struct CPU {
@@ -188,7 +192,7 @@ impl CPU {
 }
 ```
 
-Don't forget to write tests:
+不要忘记写测试：
 
 
 ```rust 
@@ -202,11 +206,11 @@ Don't forget to write tests:
    }
 ```
 
-Before moving to the next opcode, we have to admit that our code is quite convoluted:
-* the interpret method is already complicated and does multiple things
-* there is a noticeable duplication between the way **TAX** and **LDA** are implemented.
+在转到实现下一个opcode之前，我们必须承认现在的代码比较复杂
+* interpret方法较为复杂，实现的功能太多
+* TAX和LDA的实现方式有重复
 
-Let's fix that:
+重新修改如下：
 
 ```rust 
 // ... 
@@ -254,15 +258,15 @@ Let's fix that:
 }
 ```
 
-Ok. The code looks more manageable now. Hopefully, all tests are still passing.
+现在的代码看起来更容易管理，跑一下测试吧。
 
-I cannot emphasize enough the importance of writing tests for all of the opcodes we are implementing. The operations themselves are almost trivial, but tiny mistakes can cause unpredictable ripples in game logic.
+为所有的opcode编写对应的测试非常重要，微小的错误就可能导致游戏逻辑中预科预知的影响。
 
 <div style="text-align:center"><img src="./images/ch3.1/image_4_pacman_bug.gif" width="30%"/></div>
 
-Implementing that last opcode from the program should not be a problem, and I'll leave this exercise to you.
+实现程序中的最后一个opcode也不是难事，作为exercise留下。
 
-When you are done, these tests should pass:
+实现完成之后进程下面的测试：
 
 ```rust 
    #[test]
