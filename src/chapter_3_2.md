@@ -56,7 +56,7 @@ impl CPU {
 
 我们为64KiB的地址空间创建了一个数组，但是CPU只有2KiB的RAM，其他部分都作为保留部分。
 
-我们从0x8000开始将程序加载到内存中，[0x8000...0xffff]之前提到是为程序ROM保留的区域，假设指令流从这块空间的某次开始，不一定是0x8000
+我们从0x8000开始将程序加载到内存中，[0x8000...0xffff]之前提到过，是为程序ROM保留的区域，假设指令流从这块空间的某个地址开始，不一定是0x8000。
 
 NES平台有一个特殊的机制来标记CPU从哪里开始执行。插入卡带后，CPU会收到一个称为重置中断的特殊信号，该信号导致CPU做出以下行为：
 * 重置状态（寄存器和flags)
@@ -128,32 +128,29 @@ LDA $8000      <=>    ad 00 80
 
 ```
 
-Don't forget to fix failing tests now **:trollface:**
+现在需要修改测试例：
 
-Alright, that was the easy part.
-
-Remember LDA opcodes we implemented last chapter? That single mnemonic (LDA) actually can be translated into 8 different machine instructions depending on the type of the parameter:
+上一节的LDA实际上可以根据参数类型分为8种不同的机器指令
 
 
  <div style="text-align:center"><img src="./images/ch3.2/image_2_opcodes.png" width="80%"/></div>
 
-You can read about addressing modes:
+你可以在下面阅读寻址模式相关内容
 - [here](https://skilldrick.github.io/easy6502/#addressing)
 - and [here](https://www.obelisk.me.uk/6502/addressing.html)
 
-In short, the addressing mode is a property of an instruction that defines how the CPU should interpret the next 1 or 2 bytes in the instruction stream.
+简而言之，寻址模式是指令的一个属性，它定义了 CPU 应该如何解释指令流中接下来的 1 或 2 个字节。
 
-Different addressing modes have different instruction sizes, for example:
-- **Zero Page version** ($A5) has a size of 2 bytes, one for opcode itself, and one for a parameter. That's why zero page addressing can't reference memory above the first 255 bytes.
-- **Absolute version** ($AD) has 3 bytes, the Address occupies 2 bytes making it possible to reference all 65536 memory cells.
-(*NOTE: 2-byte the parameter will be packed according to little-endian rules*)
+不同的寻址模式有不同的指令大小，例如：
+- **Zero Page version** ($A5) 有两个字节，一个是opcode，一个是参数。这就是为什么zero page寻址不能引用前 255 个字节以上的内存。
+- **Absolute version** ($AD) 有3字节, 地址占用两个字节从而可以引用65536个内存单元。(*注意*：地址占用使用小端模式)
 
-There are no opcodes that occupy more than 3 bytes. CPU instruction size can be either 1, 2, or 3 bytes.
+没有超过3字节的opcode。CPU指令只有1，2或者3字节。
 
-The majority of CPU instructions provide more than one addressing alternative. Ideally, we don't want to re-implement the same addressing mode logic for every CPU instruction.
+大多数CPU提供了不止一种寻址方式，我们也不想为每条 CPU 指令重新实现相同的寻址模式。
 
 
-Let's try to codify how the CPU should interpret different addressing modes:
+下面尝试编写CPU如何解释不同的寻址模式：
 
 ```rust
 
@@ -232,7 +229,7 @@ impl CPU {
 
 ```
 
-That way, we can change our initial **LDA** implementation.
+我们初始的LDA实现也需要更改：
 
 ```rust
  fn lda(&mut self, mode: &AddressingMode) {
@@ -272,7 +269,7 @@ That way, we can change our initial **LDA** implementation.
 
 NOTE: It's absolutely necessary to increment **program_counter** after each byte being read from the instructions stream.
 
-Don't forget your tests.
+不要忘记测试
 
 ```rust
    #[test]
@@ -286,7 +283,7 @@ Don't forget your tests.
    }
 ```
 
-Using the same foundation, we can quickly implement **STA** instruction, which copies the value from register A to memory.
+使用同样的方法，我们能快速实现STA指令，它将值从寄存器复制到内存
 
 
 ```rust
@@ -315,16 +312,17 @@ Using the same foundation, we can quickly implement **STA** instruction, which c
     }
 ```
 
-Before we wrap up, I'd like to mention that the current **run** method is somewhat iffy for a few reasons.
-First, the requirement to increment program_counter by 1 (or 2) after some of the operations is error-prone. If we made an error, it would be tough to spot it.
+在结束之前，我想说明一下现在的run方法因为一些原因不太适用：
 
-Second, wouldn't it be more readable and convenient if we could group all "LDA" operations under a single `match` statement?
+1.在一些操作后pc加1和加2很容易出错并且难以检测到。
 
-Lastly, all we do is hard-coding Instructions spec into Rust code. The translation is a bit hard to compare. Keeping the code in some table form looks like a more manageable approach.
+2.如果将所有LDA操作归到同一个match语句下是不是更具有可读性和方便性？
+
+3.我们所作的工作主要是将指令规范用rust实现，翻译比较困难，以表格的形式管理代码是否会容易一点？（见下图）
 
  <div style="text-align:center"><img src="./images/ch3.2/image_3_ideal_state.png" width="80%"/></div>
 
-I leave it to you to figure out how to get to this point.
+如何实现留给读者思考。
 
 <br/>
 
