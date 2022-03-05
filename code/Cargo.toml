@@ -1,7 +1,7 @@
 [package]
 name = "nes_code"
 version = "0.1.0"
-authors = ["bugzmanov <bugzmanov@gmail.com>" dzwduan <dzwduan@gmail.com>]
+authors = ["bugzmanov <bugzmanov@gmail.com>", "dzwduan <dzwduan@gmail.com>"]
 edition = "2021"
 
 

@@ -51,4 +51,12 @@ lazy_static! {
         OpCode::new(0x81, "STA", 2, 6, Indirect_X),
         OpCode::new(0x91, "STA", 2, 6, Indirect_Y),
     ];
+
+    pub static ref OPCODES_MAP: HashMap<u8, &'static OpCode> = {
+        let mut map = HashMap::new();
+        for op in &*CPU_OPS_TAB {
+           map.insert(op.code, op);
+        }
+        map
+    };
 }
