@@ -122,7 +122,7 @@ impl CPU {
             let hex = self.mem_read(self.pc);
             self.pc += 1;
             
-            let op_struct =  opcodes.get(&hex).expect(&format!("\x1b[1;31unimplemented code {:x}\x1b[0m", hex));
+            let op_struct =  opcodes.get(&hex).expect(&format!("\u{1B}[31munimplemented code 0x{:x}\u{1B}[0m", hex));
 
             let pc_old = self.pc;
 
