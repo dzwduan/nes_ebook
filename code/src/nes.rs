@@ -126,7 +126,7 @@ impl CPU {
             Absolute     => self.mem_read_u16(self.pc),
             Absolute_X   => self.mem_read_u16(self.pc) + self.reg_x as u16,
             Absolute_Y   => self.mem_read_u16(self.pc) + self.reg_y as u16,
-            ZeroPage     => self.pc & 0xff,
+            ZeroPage     => self.mem_read(self.pc) as u16,
             ZeroPage_X   => {
                 let base = self.mem_read(self.pc);
                 let res = base.wrapping_add(self.reg_x);
@@ -141,6 +141,7 @@ impl CPU {
                 self.mem_read_u16(self.pc)
             }
 
+            //TODO:
             Indirect_X   => {
                 let base = self.mem_read(self.pc);
                 let lo = base.wrapping_add(self.reg_x);
@@ -149,6 +150,7 @@ impl CPU {
                 (hi as u16)<<8 | (lo as u16) &0xff
             },
 
+            //TODO:
             Indirect_Y   => {
                 let base = self.mem_read(self.pc);
                 let lo =base.wrapping_add(self.reg_y);
