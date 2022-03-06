@@ -1,4 +1,6 @@
 #![allow(warnings, unused)]
+use std::collections::HashMap;
+
 use lazy_static::*;
 use AddrMode::*;
 
@@ -26,7 +28,7 @@ impl Opcode {
 
 //refer Emulator 101
 #[derive(Debug)]
-enum AddrMode {
+pub enum AddrMode {
     Absolute_X,
     Absolute_Y,
     Absolute,
@@ -41,8 +43,10 @@ enum AddrMode {
     Relative,
 }
 
+
+
 lazy_static! {
-    static ref Opcode_Tab: Vec<Opcode> = vec![
+    pub static ref OPCODE_TAB: Vec<Opcode> = vec![
     //BRK
         Opcode::new("BRK", 0x00, 1,7, Implied),
 
@@ -55,8 +59,16 @@ lazy_static! {
         Opcode::new("LDA", 0xb9, 3,4, Absolute_Y),
         Opcode::new("LDA", 0xa1, 2,6, Indirect_X),
         Opcode::new("LDA", 0xb1, 2,5, Indirect_Y),
-
-    
-
     ];
+
+
+    //Opcode是全局存在的
+    pub static ref Opcode_Hash: HashMap<u8, &'static Opcode> = {
+        let mut kv = HashMap::new();
+
+        for op in &*OPCODE_TAB {
+            kv.insert(op.hex, op);
+        }
+        kv
+    };
 }
